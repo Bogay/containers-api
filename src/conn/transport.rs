@@ -177,3 +177,31 @@ fn stream_json_body(body: Body) -> impl Stream<Item = Result<Bytes>> {
 
     stream::unfold(body, unfold)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[cfg(feature = "tls")]
+    fn test_make_uri() {
+        use openssl::ssl::{SslConnector, SslMethod};
+
+        let transport = Transport::EncryptedTcp {
+            // dummy client
+            client: Client::builder().build(
+                HttpsConnector::with_connector(
+                    HttpConnector::new(),
+                    SslConnector::builder(SslMethod::tls()).unwrap(),
+                )
+                .unwrap(),
+            ),
+            host: Url::parse("https://docker:2376").unwrap(),
+        };
+
+        assert_eq!(
+            "https://docker:2376/containers/create",
+            transport.make_uri("/containers/create").unwrap()
+        )
+    }
+}
