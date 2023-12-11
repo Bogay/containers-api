@@ -57,10 +57,22 @@ impl Transport {
 
     pub fn make_uri(&self, ep: &str) -> Result<hyper::Uri> {
         match self {
-            Transport::Tcp { host, .. } => format!("{host}{ep}").parse().map_err(Error::InvalidUri),
+            Transport::Tcp { host, .. } => {
+                let url = {
+                    let mut url = host.clone();
+                    url.set_path(ep);
+                    url
+                };
+                format!("{url}").parse().map_err(Error::InvalidUri)
+            }
             #[cfg(feature = "tls")]
             Transport::EncryptedTcp { host, .. } => {
-                format!("{host}{ep}").parse().map_err(Error::InvalidUri)
+                let url = {
+                    let mut url = host.clone();
+                    url.set_path(ep);
+                    url
+                };
+                format!("{url}").parse().map_err(Error::InvalidUri)
             }
             #[cfg(unix)]
             Transport::Unix { path, .. } => Ok(DomainUri::new(path, ep).into()),
